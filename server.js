@@ -3,10 +3,12 @@ const { CreatePlayerObject } = require('./player');
 const m_port = 5000;
 const wss = new Websocket.Server({ port: m_port });
 
-var m_playerMap = new Map();
+var m_playerDictionary = new Map();
 var m_changedPlayerArray = [];
 var m_startAreaBounds = { xMin: 0, yMin: 0, xMax: 10, yMax: 10 };
 const UPDATE_INTERVAL_TIME = 50;
+let NO_PLAYER_TIME_OUT = 6000;
+let m_noPlayerCountUp = 0;
 let intervalTime = 0;
 let m_id = 0;
 
@@ -17,6 +19,8 @@ wss.on('connection', ws => {
     var id = m_id;
     ++m_id;
     HandleMessage_initial(ws, id);
+    m_playerDictionary[id] = id;
+    console.log("Player count: " + m_playerDictionary.length);
 
     ws.on("message", data => {
         console.log(`Client sent ${data}`);
@@ -31,6 +35,8 @@ wss.on('connection', ws => {
 
     ws.on("close", () => {
         console.log("Client disconnected!");
+        m_playerDictionary.delete(id);
+        console.log("Player count: " + m_playerDictionary.length);
     });
 
     let interval = setInterval(() => SendChangedDataToClient(ws), UPDATE_INTERVAL_TIME);
@@ -38,7 +44,14 @@ wss.on('connection', ws => {
 });
 
 const SendChangedDataToClient = async (ws) => {
-    m_playerMap.forEach(playerInPlayerMap => {
+
+    if (m_playerDictionary.length == 0) {
+        m_noPlayerCountUp += UPDATE_INTERVAL_TIME;
+        if (m_noPlayerCountUp >= NO_PLAYER_TIME_OUT)
+            
+    }
+
+    m_playerDictionary.forEach(playerInPlayerMap => {
         var changedData = playerInPlayerMap.GetChangedData();
         if (changedData != "Unchanged") {
             console.log(`changedData: ${changedData}`);
@@ -69,12 +82,12 @@ function SendMessageToAllClients(ws, messageAction = "", messageData = {}) {
 
 const HandleMessage_initial = (ws, id) => {
 
-    m_playerMap.forEach(playerInPlayerMap => {
+    m_playerDictionary.forEach(playerInPlayerMap => {
         SendMessageToClient(ws, "world_data", `NewPlayer,${playerInPlayerMap.GetAllData()}`);
     });
 
     var newPlayer = CreatePlayerObject(id, `Player_${id}`, m_startAreaBounds);
-    m_playerMap.set(`${id}`, newPlayer);
+    m_playerDictionary.set(`${id}`, newPlayer);
     console.log(`Sending: Player,${ newPlayer.GetAllData() }`);
     SendMessageToClient(ws, "player_data", `Player,${newPlayer.GetAllData()}`);
 
@@ -83,13 +96,13 @@ const HandleMessage_initial = (ws, id) => {
 
 const HandleMessage_update = (data) => {
     console.log(`data: ${data}`);
-    m_playerMap.get(data[1]).Update(data);
+    m_playerDictionary.get(data[1]).Update(data);
 }
 
 async function ServerUpdate() {
     let d = new Date();
     let time = d.getTime();
-    if (m_playerMap.length > 0) {
+    if (m_playerDictionary.length > 0) {
         //m_playerArray.forEach(playerInPlayerArray => playerInPlayerArray.Update());
     }
     else {
