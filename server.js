@@ -11,6 +11,7 @@ let NO_PLAYER_TIME_OUT = 6000;
 let m_noPlayerCountUp = 0;
 let intervalTime = 0;
 let m_id = 0;
+let m_intervalUpdateId = 0;
 
 console.log("Server has started on port "+m_port);
 
@@ -21,6 +22,7 @@ wss.on('connection', ws => {
     HandleMessage_initial(ws, id);
     m_playerDictionary[id] = id;
     console.log("Player count: " + m_playerDictionary.length);
+    m_noPlayerCountUp = 0;
 
     ws.on("message", data => {
         console.log(`Client sent ${data}`);
@@ -48,7 +50,7 @@ const SendChangedDataToClient = async (ws) => {
     if (m_playerDictionary.length == 0) {
         m_noPlayerCountUp += UPDATE_INTERVAL_TIME;
         if (m_noPlayerCountUp >= NO_PLAYER_TIME_OUT)
-            
+            clearInterval(m_intervalUpdateId);
     }
 
     m_playerDictionary.forEach(playerInPlayerMap => {
@@ -118,5 +120,5 @@ async function ServerUpdate() {
 
 ///////////////////////////////////////////////////////////////////////
 
-let update_interval = setInterval(() => ServerUpdate(), UPDATE_INTERVAL_TIME);
+m_intervalUpdateId = setInterval(() => ServerUpdate(), UPDATE_INTERVAL_TIME);
 ServerUpdate();
