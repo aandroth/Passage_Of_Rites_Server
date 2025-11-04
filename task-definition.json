@@ -1,0 +1,31 @@
+{
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "inferenceAccelerators": [],
+  "containerDefinitions": [
+    {
+      "name": "flatworld-backend-server",
+      "image": "160579864932.dkr.ecr.us-west-2.amazonaws.com/cdk-hnb659fds-container-assets-160579864932-us-west-2:latest",
+      "resourceRequirements": null,
+      "essential": true,
+      "portMappings": [
+        {
+          "appProtocol": "http",
+          "containerPort": "80",
+          "hostPort": "80",
+          "protocol": "tcp"
+        }
+
+      ]
+    }
+  ],
+  "volumes": [],
+  "networkMode": "awsvpc",
+  "memory": "512",
+  "cpu": "256",
+  "executionRoleArn": "arn:aws:iam::160579864932:role/ecsTaskExecutionRole",
+  "family": "flatworld-devops-sandbox-task-definition",
+  "taskRoleArn": "arn:aws:iam::160579864932:role/ecsTaskExecutionRole",
+  "placementConstraints": []
+}

@@ -13,7 +13,8 @@ let intervalTime = 0;
 let m_id = 0;
 let m_intervalUpdateId = 0;
 
-console.log("Server has started on port "+m_port);
+
+console.log("Server " + m_serverName + " has started on port " + m_port);
 
 wss.on('connection', ws => {
     console.log(`Client connected!`);
@@ -32,6 +33,9 @@ wss.on('connection', ws => {
 
         if (listedData.length == 6 && listedData[0] == "Update") {
             HandleMessage_update(listedData);
+        }
+        if (listedData.length == 2 && listedData[0] == "Name") {
+            HandleMessage_name(listedData);
         }
     });
 
@@ -100,6 +104,7 @@ const HandleMessage_update = (data) => {
     console.log(`data: ${data}`);
     m_playerDictionary.get(data[1]).Update(data);
 }
+
 
 async function ServerUpdate() {
     let d = new Date();
