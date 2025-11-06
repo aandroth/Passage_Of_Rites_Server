@@ -11,4 +11,4 @@ phases:
       - npm run
   post_build:
     commands:
-      - echo "Build completed on `date`"
+      - echo "Build has been completed on `date`"
