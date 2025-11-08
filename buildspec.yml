@@ -1,4 +1,7 @@
 version: 0.2
+env:
+  variables:
+    MY_SERVER_NAME: "default_server_name"
 phases:
   install:
     runtime-versions:
@@ -8,7 +11,7 @@ phases:
       - npm install
   build:
     commands:
-      - npm run
+      - npm run -- --serverName=$MY_SERVER_NAME
   post_build:
     commands:
       - echo "Build has been completed on `date`"

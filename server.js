@@ -2,6 +2,7 @@ const Websocket = require('ws');
 const { CreatePlayerObject } = require('./player');
 const m_port = 5000;
 const wss = new Websocket.Server({ port: m_port });
+const args = require('minimist')(process.argv.slice(2));
 
 var m_playerDictionary = new Map();
 var m_changedPlayerArray = [];
@@ -12,9 +13,9 @@ let m_noPlayerCountUp = 0;
 let intervalTime = 0;
 let m_id = 0;
 let m_intervalUpdateId = 0;
+const SERVER_NAME = args['serverName'];
 
-
-console.log("Server " + m_serverName + " has started on port " + m_port);
+console.log("Server " + SERVER_NAME + " has started on port " + m_port);
 
 wss.on('connection', ws => {
     console.log(`Client connected!`);
@@ -92,7 +93,7 @@ const HandleMessage_initial = (ws, id) => {
         SendMessageToClient(ws, "world_data", `NewPlayer,${playerInPlayerMap.GetAllData()}`);
     });
 
-    var newPlayer = CreatePlayerObject(id, `Player_${id}`, m_startAreaBounds);
+    var newPlayer = CreatePlayerObject(id, `Kobold_${id}`, m_startAreaBounds);
     m_playerDictionary.set(`${id}`, newPlayer);
     console.log(`Sending: Player,${ newPlayer.GetAllData() }`);
     SendMessageToClient(ws, "player_data", `Player,${newPlayer.GetAllData()}`);
