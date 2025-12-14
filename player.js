@@ -1,12 +1,11 @@
 
 
-function CreatePlayerObject(id, name, startAreaBounds) {
+function CreatePlayerObject(id, name) {
     var newPlayerObject = {};
     newPlayerObject.m_id = id;
     newPlayerObject.m_name = name;
-    newPlayerObject.m_startAreaBounds = startAreaBounds;
     newPlayerObject.m_color = { r: Math.random(), g: Math.random(), b: Math.random() };
-    newPlayerObject.m_position = { x: (startAreaBounds.xMin + startAreaBounds.xMax) * 0.5, y: (startAreaBounds.yMin + startAreaBounds.yMax) * 0.5 };
+    newPlayerObject.m_position = { x: 0, y: 0 };
     newPlayerObject.m_localScaleX = 1;
     newPlayerObject.m_state = 0; // 0: idle, 1: moving, 2: dazed
     newPlayerObject.m_carriedItem = 0; // 0: Nothing

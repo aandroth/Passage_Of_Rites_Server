@@ -1,11 +1,13 @@
 const Websocket = require('ws');
 const { CreatePlayerObject } = require('./player');
+const { GetPlayerPositionAndFacing } = require('./player_starting_positions');
 const m_port = 5000;
 const wss = new Websocket.Server({ port: m_port });
 const args = require('minimist')(process.argv.slice(2));
 const SERVER_NAME = args['serverName'];
 
 var m_playerDictionary = new Map();
+var m_playerReadinessDictionary = new Map();
 var m_changedPlayerArray = [];
 var m_playingGame = false;
 var m_startAreaBounds = { xMin: 0, yMin: 0, xMax: 10, yMax: 10 };
@@ -27,14 +29,21 @@ let m_trapMakingGameTimeCountdown = 120.0;
 let m_hallwayGameTimeCountdown = 120.0;
 let m_GolemGameTimeCountdown = 120.0;
 
-const ServerState = Object.freeze({
+const SERVER_STATE = Object.freeze({
+    NOT_PLAYING: Symbol("not_playing"),
+    LEVEL_LOADING: Symbol("level_loading"),
+    CHAR_CREATION: Symbol("char_creation"),
+    GAME_PLAYING: Symbol("game_playing")
+});
+const GAME_STATE = Object.freeze({
     NOT_PLAYING: Symbol("not_playing"),
     RAT_CATCHING_GAME: Symbol("rat_catching_game"),
     TRAP_MAKING_GAME: Symbol("trap_making_game"),
     HALLWAY_GAME: Symbol("hallway_game"),
-    GOLEM_GAME: Symbol("golem_game"),
+    GOLEM_GAME: Symbol("golem_game")
 });
-let m_serverState = ServerState.NOT_PLAYING;
+let m_serverState = SERVER_STATE.NOT_PLAYING;
+let m_gameState = GAME_STATE.NOT_PLAYING;
 let m_serverOwnerId = -1;
 
 console.log("Server " + SERVER_NAME + " has started on port " + m_port);
@@ -45,7 +54,7 @@ wss.on('connection', ws => {
 
     HandleMessage_initial(ws, id);
     if (id != -1) {
-        m_playerDictionary.set(id, id);
+        m_playerDictionary.set(id, {});
         m_idInUse[id] = true;
         console.log("Player count: " + m_playerDictionary.size);
         m_noPlayerCountUp = 0;
@@ -67,6 +76,18 @@ wss.on('connection', ws => {
             }
             if (listedData.length == 2 && listedData[0] == "Name") {
                 HandleMessage_name(listedData);
+            }
+            if (listedData.length == 2 && listedData[0] == "Player_Ready") {
+                HandleMessage_playerReady(id);
+            }
+            if (listedData.length == 2 && listedData[0] == "Load_Level") {
+                HandleMessage_loadLevel(listedData);
+            }
+            if (listedData.length == 2 && listedData[0] == "Create_Chars") {
+                HandleMessage_createChars(listedData);
+            }
+            if (listedData.length == 1 && listedData[0] == "Game_Start") {
+                HandleMessage_gameStart(listedData);
             }
         });
 
@@ -90,7 +111,7 @@ wss.on('connection', ws => {
 
 const SendChangedDataToClient = async (ws) => {
     if (m_playingGame) {
-        if (m_playerDictionary.length == 0) {
+        if (m_playerDictionary.size == 0) {
             m_noPlayerCountUp += UPDATE_INTERVAL_TIME;
             if (m_noPlayerCountUp >= NO_PLAYER_TIME_OUT)
                 clearInterval(m_intervalUpdateId);
@@ -117,7 +138,7 @@ function SendMessageToClient(ws, messageAction = "", messageData = {}) {
     console.log(`SendMessageToClient: ${messageToClient}`);
     ws.send(messageToClient);
 }
-function SendMessageToAllClients(ws, messageAction = "", messageData = {}) {
+function SendMessageToAllClients(messageAction = "", messageData = {}) {
     if (messageAction == "") {
         console.log(`Message to Client must have a type!`);
         return;
@@ -129,7 +150,7 @@ function SendMessageToAllClients(ws, messageAction = "", messageData = {}) {
 
 const HandleMessage_initial = (ws, id) => {
 
-    console.log(`Sending: Player,${ id }`);
+    console.log(`Sending: Init,${ id }`);
     SendMessageToClient(ws, "player_init", `Init,${id}`);
 }
 
@@ -140,22 +161,86 @@ const HandleMessage_makePlayerOwner = (ws, id) => {
 }
 
 const HandleMessage_createPlayer = (ws, id) => {
+    SendMessageToAllClients("world_data", `NewPlayer,${newPlayer.GetAllData()}`);
+}
 
-    m_playerDictionary.forEach(playerInPlayerMap => {
-        SendMessageToClient(ws, "world_data", `NewPlayer,${playerInPlayerMap.GetAllData()}`);
+
+const CreateAllCharsForAllPlayers = () => {
+
+    Object.keys(m_idInUse).forEach((id) => {
+        console.log(`Checking if ${id} is in use`);
+        if (m_idInUse[id]) {
+            var newPlayer = CreatePlayerObject(id, `Kobold_${id}`);
+            m_playerDictionary[id] = newPlayer;
+            console.log(`Sending for player ${id}: Player,${newPlayer.GetAllData()}`);
+            SendMessageToAllClients("world_data", `NewPlayer,${newPlayer.GetAllData()}`);
+        }
     });
+}
 
-    var newPlayer = CreatePlayerObject(id, `Kobold_${id}`, m_startAreaBounds);
-    m_playerDictionary.set(`${id}`, newPlayer);
-    console.log(`Sending: Player,${ newPlayer.GetAllData() }`);
-    SendMessageToClient(ws, "player_data", `Player,${newPlayer.GetAllData()}`);
+const GameStartForAllPlayers = () => {
 
-    SendMessageToAllClients(ws, "world_data", `NewPlayer,${newPlayer.GetAllData()}`);
+    console.log(`GameStartForAllPlayers`);
+    Object.keys(m_idInUse).forEach((id) => {
+        console.log(`Checking if ${id} is in use`);
+        if (m_idInUse[id])
+        SendMessageToAllClients("world_data", `Game_Start,${id}`);
+    });
 }
 
 const HandleMessage_update = (data) => {
     console.log(`data: ${data}`);
     m_playerDictionary.get(data[1]).Update(data);
+}
+
+const HandleMessage_playerReady = (id) => {
+    console.log(`Player ${id} is ready.`);
+    if (m_serverState == SERVER_STATE.LEVEL_LOADING) console.log(`Player is ready while m_serverState is LEVEL_LOADING`);
+    if (m_serverState == SERVER_STATE.CHAR_CREATION) console.log(`Player is ready while m_serverState is CHAR_CREATION`);
+    m_playerReadinessDictionary.set(id, true);
+    console.log(`m_playerReadinessDictionary size: ${m_playerReadinessDictionary.size}`);
+    console.log(`m_playerDictionary size: ${m_playerDictionary.size}`);
+    if (m_playerReadinessDictionary.size == m_playerDictionary.size) {
+        m_playerReadinessDictionary = new Map();
+        if (m_serverState == SERVER_STATE.LEVEL_LOADING) {
+            CreateAllCharsForAllPlayers();
+            m_serverState = SERVER_STATE.CHAR_CREATION;
+        }
+        else if (m_serverState == SERVER_STATE.CHAR_CREATION) {
+            m_serverState = SERVER_STATE.GAME_PLAYING;
+            GameStartForAllPlayers();
+        }
+    }
+}
+
+const HandleMessage_loadLevel = (data) => {
+    console.log(`data: ${data}`);
+    // Load the level
+    SendMessageToAllClients("load_level", `${data}`);
+    m_serverState = SERVER_STATE.LEVEL_LOADING;
+    if (data == "1")
+        m_gameState = GAME_STATE.RAT_CATCHING_GAME;
+    else if (data == "2")
+        m_gameState = GAME_STATE.TRAP_MAKING_GAME;
+    else if (data == "3")
+        m_gameState = GAME_STATE.HALLWAY_GAME;
+    else if (data == "4")
+        m_gameState = GAME_STATE. GOLEM_GAME;
+}
+
+const HandleMessage_createChars = (data) => {
+    console.log(`data: ${data}`);
+
+    m_serverState = SERVER_STATE.CHAR_CREATION;
+    for (let i = 0; i < NUMBER_OF_PLAYER_SLOTS; ++i) {
+        if (m_idInUse[i])
+            HandleMessage_createPlayer(i);
+    }
+}
+
+const HandleMessage_gameStart = (data) => {
+    // Tell all players to start the game
+    SendMessageToAllClients("start_game", `Game_Start,${data}`);
 }
 
 function GetNextId(){
@@ -167,25 +252,27 @@ function GetNextId(){
 }
 
 async function ServerUpdate() {
-    let d = new Date();
-    let time = d.getTime();
-    if (m_playerDictionary.length > 0) {
-        if (m_playingGame)
-            m_playerArray.forEach(playerInPlayerArray => playerInPlayerArray.Update());
-    }
-    d = new Date();
-    let deltaTime = d.getTime() - time;
-
-    if (m_playerDictionary.length == 0) {
-        m_noPlayerCountUp += deltaTime;
-        if (m_noPlayerCountUp >= NO_PLAYER_TIME_OUT) {
-            clearInterval();
+    if (m_serverState == SERVER_STATE.GAME_PLAYING) {
+        let d = new Date();
+        let time = d.getTime();
+        if (m_playerDictionary.length > 0) {
+            if (m_playingGame)
+                m_playerArray.forEach(playerInPlayerArray => playerInPlayerArray.Update());
         }
-    }
-    //console.log("Server Update end at " + d.getTime() + ", with delta of " + (deltaTime));
-    let intervalTimeDelta = d.getTime() - intervalTime;
-    intervalTime = d.getTime();
+        d = new Date();
+        let deltaTime = d.getTime() - time;
+
+        if (m_playerDictionary.length == 0) {
+            m_noPlayerCountUp += deltaTime;
+            if (m_noPlayerCountUp >= NO_PLAYER_TIME_OUT) {
+                clearInterval();
+            }
+        }
+        //console.log("Server Update end at " + d.getTime() + ", with delta of " + (deltaTime));
+        let intervalTimeDelta = d.getTime() - intervalTime;
+        intervalTime = d.getTime();
     //console.log("Server UpdateInterval lasted till " + intervalTime + ", with delta of " + intervalTimeDelta);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////
