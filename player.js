@@ -1,10 +1,10 @@
 
 
-function CreatePlayerObject(id, name) {
+function CreatePlayerObject(id, name, color) {
     var newPlayerObject = {};
     newPlayerObject.m_id = id;
     newPlayerObject.m_name = name;
-    newPlayerObject.m_color = { r: Math.random(), g: Math.random(), b: Math.random() };
+    newPlayerObject.m_color = color; //{ r: Math.random(), g: Math.random(), b: Math.random() };
     newPlayerObject.m_position = { x: 0, y: 0 };
     newPlayerObject.m_localScaleX = 1;
     newPlayerObject.m_state = 0; // 0: idle, 1: moving, 2: dazed
@@ -49,6 +49,10 @@ function CreatePlayerObject(id, name) {
         //else if (newPlayerObject.m_position.x + newPlayerObject.m_size + 50 > newPlayerObject.m_startAreaBounds.xMax) { newPlayerObject.m_position.x = newPlayerObject.m_startAreaBounds.xMax - 50 - newPlayerObject.m_size - 1; }
         //if (newPlayerObject.m_position.y - newPlayerObject.m_size < newPlayerObject.m_startAreaBounds.yMin) { newPlayerObject.m_position.y = newPlayerObject.m_startAreaBounds.yMin + newPlayerObject.m_size + 1; }
         //else if (newPlayerObject.m_position.y + newPlayerObject.m_size + 50 > newPlayerObject.m_startAreaBounds.yMax) { newPlayerObject.m_position.y = newPlayerObject.m_startAreaBounds.yMax - 50 - newPlayerObject.m_size - 1; }
+    }
+
+    newPlayerObject.NameChange = function (name) {
+        newPlayerObject.m_name = name;
     }
 
     newPlayerObject.GetChangedData = function () {

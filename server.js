@@ -6,6 +6,7 @@ const wss = new Websocket.Server({ port: m_port });
 const args = require('minimist')(process.argv.slice(2));
 const SERVER_NAME = args['serverName'];
 
+var m_playerUnchangingDataDictionary = new Map();
 var m_playerDictionary = new Map();
 var m_playerReadinessDictionary = new Map();
 var m_changedPlayerArray = [];
@@ -46,7 +47,17 @@ let m_serverState = SERVER_STATE.NOT_PLAYING;
 let m_gameState = GAME_STATE.NOT_PLAYING;
 let m_serverOwnerId = -1;
 
-console.log("Server " + SERVER_NAME + " has started on port " + m_port);
+//console.log("Server " + SERVER_NAME + " has started on port " + m_port);
+
+//m_playerUnchangingDataDictionary.set(4, { name: `Kobold_${4}`, color: { r: Math.random(), g: Math.random(), b: Math.random() } });
+//console.log("NAME: " + m_playerUnchangingDataDictionary.get(4).name);
+
+//m_playerUnchangingDataDictionary.get(4).name = "Bob";
+//console.log("NAME: " + m_playerUnchangingDataDictionary.get(4).name);
+
+//console.log("NAME: " + m_playerUnchangingDataDictionary.get(4).color.r);
+//console.log("NAME: "+m_playerUnchangingDataDictionary.get(4).color.g);
+//console.log("NAME: "+m_playerUnchangingDataDictionary.get(4).color.b);
 
 wss.on('connection', ws => {
     console.log(`Client connected!`);
@@ -55,6 +66,8 @@ wss.on('connection', ws => {
     HandleMessage_initial(ws, id);
     if (id != -1) {
         m_playerDictionary.set(id, {});
+        m_playerUnchangingDataDictionary.set(id, { name: `Kobold_${id}`, color: { r: Math.random(), g: Math.random(), b: Math.random() } });
+        console.log("NAME: " + m_playerUnchangingDataDictionary.get(id).name);
         m_idInUse[id] = true;
         console.log("Player count: " + m_playerDictionary.size);
         m_noPlayerCountUp = 0;
@@ -74,8 +87,8 @@ wss.on('connection', ws => {
             if (listedData.length == 6 && listedData[0] == "Update") {
                 HandleMessage_update(listedData);
             }
-            if (listedData.length == 2 && listedData[0] == "Name") {
-                HandleMessage_name(listedData);
+            if (listedData.length == 3 && listedData[0] == "Change_Name") {
+                HandleMessage_nameChange(listedData);
             }
             if (listedData.length == 2 && listedData[0] == "Player_Ready") {
                 HandleMessage_playerReady(id);
@@ -170,7 +183,7 @@ const CreateAllCharsForAllPlayers = () => {
     Object.keys(m_idInUse).forEach((id) => {
         console.log(`Checking if ${id} is in use`);
         if (m_idInUse[id]) {
-            var newPlayer = CreatePlayerObject(id, `Kobold_${id}`);
+            var newPlayer = CreatePlayerObject(id, m_playerUnchangingDataDictionary.get(parseInt(id)).name, m_playerUnchangingDataDictionary.get(parseInt(id)).color);
             m_playerDictionary[id] = newPlayer;
             console.log(`Sending for player ${id}: Player,${newPlayer.GetAllData()}`);
             SendMessageToAllClients("world_data", `NewPlayer,${newPlayer.GetAllData()}`);
@@ -191,6 +204,12 @@ const GameStartForAllPlayers = () => {
 const HandleMessage_update = (data) => {
     console.log(`data: ${data}`);
     m_playerDictionary.get(data[1]).Update(data);
+}
+
+const HandleMessage_nameChange = (data) => {
+    //console.log(`data: ${m_playerUnchangingDataDictionary.get(parseInt(data[1])).name}`);
+    m_playerUnchangingDataDictionary.get(parseInt(data[1])).name = data[2];
+    //console.log("NAME: " + m_playerUnchangingDataDictionary.get(parseInt(data[1])).name);
 }
 
 const HandleMessage_playerReady = (id) => {
