@@ -3,7 +3,7 @@
 function CreatePlayerObject(id, name, color) {
     var newPlayerObject = {};
     newPlayerObject.m_id = id;
-    newPlayerObject.m_name = name;
+    newPlayerObject.m_name = name;// if (name == "") newPlayerObject.m_name = "Kobold_" + id;
     newPlayerObject.m_color = color; //{ r: Math.random(), g: Math.random(), b: Math.random() };
     newPlayerObject.m_position = { x: 0, y: 0 };
     newPlayerObject.m_localScaleX = 1;
