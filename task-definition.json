@@ -9,6 +9,8 @@
       "image": "160579864932.dkr.ecr.us-west-2.amazonaws.com/cdk-hnb659fds-container-assets-160579864932-us-west-2:latest",
       "resourceRequirements": null,
       "essential": true,
+      "startTimeout": 0,
+      "stopTimeout": 100,
       "portMappings": [
         {
           "appProtocol": "http",

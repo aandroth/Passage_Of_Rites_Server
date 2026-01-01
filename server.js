@@ -17,7 +17,7 @@ let intervalTime = 0;
 let m_idInUse = [false, false, false, false];
 let m_intervalUpdateId = 0;
 const UPDATE_INTERVAL_TIME = 20;
-const NO_PLAYER_TIME_OUT = 60;
+const NO_PLAYER_TIME_OUT = 60 * 1000;
 const NUMBER_OF_PLAYER_SLOTS = 4;
 
 const RAT_CATCHING_GAME_TIME = 120.0;
@@ -67,26 +67,27 @@ wss.on('connection', ws => {
 
     HandleMessage_initial(ws, id);
     if (id != -1) {
-        m_playerDictionary.set(id, {});
-        m_playerUnchangingDataDictionary.set(id, { name: `Kobold_${id}`, titles: "", color: { r: Math.random(), g: Math.random(), b: Math.random() } });
+        m_playerDictionary.set(id, {m_status: "unset"});
+        m_playerUnchangingDataDictionary.set(id, { name: `Kobold_${id}`, totalPoints: 0, titles: "", color: { r: Math.random(), g: Math.random(), b: Math.random() } });
         console.log("NAME: " + m_playerUnchangingDataDictionary.get(id).name);
         m_idInUse[id] = true;
-        console.log("Player count: " + m_playerDictionary.size);
+        //console.log("Player count: " + m_playerDictionary.size);
         m_noPlayerCountUp = 0;
 
         if (m_serverOwnerId == -1) {
-            console.log("Updating m_serverOwnerId");
+            //console.log("Updating m_serverOwnerId");
             m_serverOwnerId = id;
             HandleMessage_makePlayerOwner(ws, id);
         }
 
         ws.on("message", data => {
-            console.log(`Client sent ${data}`);
+            //console.log(`Client sent ${data}`);
             var stringData = `${data}`;
             var listedData = stringData.split(',');
-            console.log(`Received Update: ${stringData}`);
+            if (listedData[0] == "Update" && listedData[7] != "")
+                console.log(`Received Message: ${stringData}`);
 
-            if (listedData.length == 6 && listedData[0] == "Update") {
+            if (listedData.length == 9 && listedData[0] == "Update") {
                 HandleMessage_update(listedData);
             }
             if (listedData.length == 3 && listedData[0] == "Change_Name") {
@@ -107,6 +108,9 @@ wss.on('connection', ws => {
             if (listedData.length == 2 && listedData[0] == "Start_Countdown") {
                 HandleMessage_startCountdown(listedData);
             }
+            if (listedData.length == 2 && listedData[0] == "Kill_Game") {
+                HandleMessage_killGame(listedData);
+            }
         });
 
         ws.on("close", () => {
@@ -119,7 +123,7 @@ wss.on('connection', ws => {
                     if (m_idInUse[i]) m_serverOwnerId = i;
                 }
             }
-            console.log("Player count: " + m_playerDictionary.size);
+            //console.log("Player count: " + m_playerDictionary.size);
         });
 
         let interval = setInterval(() => SendChangedDataToClient(ws), UPDATE_INTERVAL_TIME);
@@ -129,12 +133,6 @@ wss.on('connection', ws => {
 
 const SendChangedDataToClient = async (ws) => {
     if (m_playingGame) {
-        if (m_playerDictionary.size == 0) {
-            m_noPlayerCountUp += UPDATE_INTERVAL_TIME;
-            if (m_noPlayerCountUp >= NO_PLAYER_TIME_OUT)
-                clearInterval(m_intervalUpdateId);
-        }
-
         m_playerDictionary.forEach(playerInPlayerMap => {
             var changedData = playerInPlayerMap.GetChangedData();
             if (changedData != "Unchanged") {
@@ -193,9 +191,13 @@ const CreateAllCharsForAllPlayers = () => {
             if (!m_playerUnchangingDataDictionary.get(intId).name || m_playerUnchangingDataDictionary.get(intId).name.length == 0)
                 m_playerUnchangingDataDictionary.get(intId).name = `Kobold_${id}`;
             console.log(`NAME: ${m_playerUnchangingDataDictionary.get(intId).name}`);
-            var newPlayer = CreatePlayerObject(id, m_playerUnchangingDataDictionary.get(intId).name, m_playerUnchangingDataDictionary.get(intId).color);
-            m_playerDictionary[id] = newPlayer;    
-            console.log(`Sending for player ${id}: New_Player,${newPlayer.GetAllData()}`);
+            var newPlayer = CreatePlayerObject(intId, m_playerUnchangingDataDictionary.get(intId).name,
+                                                    m_playerUnchangingDataDictionary.get(intId).color,
+                                                    m_playerUnchangingDataDictionary.get(intId).totalPoints,
+                                                    m_playerUnchangingDataDictionary.get(intId).titles);
+            m_playerDictionary.set(intId, newPlayer);
+            console.log(`New player in Dictionary: ${m_playerDictionary.get(intId).m_name}`);
+            //console.log(`Sending for player ${id}: New_Player,${newPlayer.GetAllData()}`);
             SendMessageToAllClients("New_Player", `New_Player,${newPlayer.GetAllData()}`);
         }
     });
@@ -227,8 +229,13 @@ const StartGameCountdown = () => {
 }
 
 const HandleMessage_update = (data) => {
-    console.log(`data: ${data}`);
-    m_playerDictionary.get(data[1]).Update(data);
+    //console.log(`UPDATE: data: ${data}`);
+    //console.log(`SIZE: ${m_playerDictionary.size}`);
+    //console.log(`OBJECT: ${m_playerDictionary.get(0)}`);
+    //console.log(`UNSET?: ${m_playerDictionary.get(0).m_status}`);
+    //console.log(`ID: ${data[1]}`);
+    //console.log(`ID as int: ${parseInt(data[1])}`);
+    m_playerDictionary.get(parseInt(data[1])).Update(data);
 }
 
 const HandleMessage_nameChange = (data) => {
@@ -243,8 +250,8 @@ const HandleMessage_playerReady = (id) => {
     if (m_serverState == SERVER_STATE.LEVEL_LOADING) console.log(`Player is ready while m_serverState is LEVEL_LOADING`);
     if (m_serverState == SERVER_STATE.CHAR_CREATION) console.log(`Player is ready while m_serverState is CHAR_CREATION`);
     m_playerReadinessDictionary.set(id, true);
-    console.log(`m_playerReadinessDictionary size: ${m_playerReadinessDictionary.size}`);
-    console.log(`m_playerDictionary size: ${m_playerDictionary.size}`);
+    //console.log(`m_playerReadinessDictionary size: ${m_playerReadinessDictionary.size}`);
+    //console.log(`m_playerDictionary size: ${m_playerDictionary.size}`);
     if (m_playerReadinessDictionary.size == m_playerDictionary.size) {
         m_playerReadinessDictionary = new Map();
         if (m_serverState == SERVER_STATE.LEVEL_LOADING) {
@@ -256,7 +263,6 @@ const HandleMessage_playerReady = (id) => {
             SendMessageToAllClients("Start_Intro", `Start_Intro,`);
         }
         else if (m_serverState == SERVER_STATE.GAME_INTRO) {
-            //StartGameCountdown();
             m_serverState = SERVER_STATE.GAME_READY;
             SendMessageToAllClients("Call_Countdown", `Call_Countdown,`);
         }
@@ -266,22 +272,38 @@ const HandleMessage_playerReady = (id) => {
         }
         else if (m_serverState == SERVER_STATE.GAME_OUTRO) {
             m_serverState = SERVER_STATE.LEVEL_LOADING;
+            m_playerUnchangingDataDictionary.get(id).totalPoints += m_playerDictionary.get(id).m_points;
+            m_playerUnchangingDataDictionary.get(id).titles = m_playerDictionary.get(id).m_titles;
+            console.log(`titles: ${m_playerUnchangingDataDictionary.get(0).titles}`);
+            console.log(`m_titles: ${m_playerDictionary.get(0).m_titles}`);
+            //console.log(`size: ${m_playerDictionary.size}`);
             SendMessageToAllClients("Ready_For_Next_Level", `Ready_For_Next_Level,`);
+            //console.log(`size: ${m_playerDictionary.size}`);
+            //for (let i = 0; i < m_playerUnchangingDataDictionary.size; ++i) {
+            //    m_playerUnchangingDataDictionary.get(i).totalPoints += m_playerDictionary.get(i).m_points;
+            //}
         }
     }
 }
 
 const HandleMessage_startCountdown = (data) => {
-    console.log(`data: ${data}`);
+    //console.log(`HandleMessage_startCountdown data: ${data}`);
     m_CurrGameTimeCountdown = (parseFloat(data[1]) + 1.0) * 1000; // Multiply by 1000 to convert to milliseconds
     m_CurrGameTime = Date.now();
-    console.log(`Starting countdown with : ${m_CurrGameTimeCountdown}`);
+    //console.log(`Starting countdown with : ${m_CurrGameTimeCountdown}`);
     SendMessageToAllClients("Start_Countdown", `${data}`);
     m_serverState = SERVER_STATE.GAME_PLAYING;
 }
 
-const HandleMessage_loadLevel = (data) => {
+const HandleMessage_killGame = (data) => {
     console.log(`data: ${data}`);
+    console.log(`Killing game server`);
+    SendMessageToAllClients("load_level", `Load_Level,0`);
+    process.exit();
+}
+
+const HandleMessage_loadLevel = (data) => {
+    //console.log(`data: ${data}`);
     // Load the level
     SendMessageToAllClients("load_level", `${data}`);
     m_serverState = SERVER_STATE.LEVEL_LOADING;
@@ -318,19 +340,20 @@ function GetNextId(){
     return -1; // Server Full
 }
 
-
+//let ccc = 0;
 async function ServerUpdate() {
-    
+    //++ccc;
+    //console.log(`ServerUpdate called: ${ccc}`);
+    let deltaTime = Date.now() - m_CurrGameTime;
+    m_CurrGameTime = Date.now();
     if (m_serverState == SERVER_STATE.GAME_PLAYING && m_CurrGameTimeCountdown > 0) {
-        let deltaTime = Date.now() - m_CurrGameTime;
-        m_CurrGameTime = Date.now();
-        if (m_playerDictionary.length > 0) {
+        if (m_playerDictionary.size > 0) {
             if (m_playingGame)
                 m_playerArray.forEach(playerInPlayerArray => playerInPlayerArray.Update());
         }
-        console.log("Before: " + m_CurrGameTimeCountdown);
+        //console.log("Before: " + m_CurrGameTimeCountdown);
         m_CurrGameTimeCountdown -= (deltaTime);
-        console.log("After: "+m_CurrGameTimeCountdown);
+        //console.log("After: "+m_CurrGameTimeCountdown);
 
         if (m_CurrGameTimeCountdown <= 0) {
             if (!m_serverState == SERVER_STATE.GAME_OUTRO) {
@@ -339,10 +362,12 @@ async function ServerUpdate() {
         }
     }
 
-    if (m_playerDictionary.length == 0) {
+    if (m_playerDictionary.size == 0) {
         m_noPlayerCountUp += deltaTime;
+        //console.log(`No players connected for ${m_noPlayerCountUp * 0.001} seconds.`);
         if (m_noPlayerCountUp >= NO_PLAYER_TIME_OUT) {
-            clearInterval();
+            console.log(`No players connected for ${NO_PLAYER_TIME_OUT * 0.001} seconds. Shutting down server.`);
+            process.exit();
         }
     }
 }
