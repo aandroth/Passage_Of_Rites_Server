@@ -52,7 +52,7 @@ let m_serverState = SERVER_STATE.NOT_PLAYING;
 let m_gameState = GAME_STATE.NOT_PLAYING;
 let m_serverOwnerId = -1;
 
-//console.log("Server " + SERVER_NAME + " has started on port " + m_port);
+console.log("Server " + SERVER_NAME + " has started on port " + m_port);
 
 //m_playerUnchangingDataDictionary.set(4, { name: `Kobold_${4}`, color: { r: Math.random(), g: Math.random(), b: Math.random() } });
 //console.log("NAME: " + m_playerUnchangingDataDictionary.get(4).name);
