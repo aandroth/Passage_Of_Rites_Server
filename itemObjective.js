@@ -1,33 +1,27 @@
 
 
-function CreatePlayerObject(id, name, color, totalPoints, titles) {
-    var newPlayerObject = {};
-    newPlayerObject.m_status = "set";
-    newPlayerObject.m_id = id;
-    newPlayerObject.m_position = { x: 0, y: 0 };
-    newPlayerObject.m_localScaleX = 1;
-    newPlayerObject.m_state = 0; // 0: idle, 1: moving, 2: dazed
-    newPlayerObject.m_carriedItem = 0; // 0: Nothing
-    newPlayerObject.m_titles = titles; // 
-    newPlayerObject.m_points = 0;  //
-    newPlayerObject.m_totalPoints = totalPoints;  //
-    newPlayerObject.m_name = name;
-    newPlayerObject.m_color = color;
+function CreatePlayerObject(id, dataList) {
 
-    newPlayerObject.m_changedData = {
-        positionX: "",
-        positionY: "",
-        localScaleX: "",
+    //"Action, id, state, carriedItem, neededItems";
+    //      0,  1,     2,           3,           4
+
+    var newItemObjectiveObject = {};
+    newItemObjectiveObject.m_status = "set";
+    newItemObjectiveObject.m_id = id;
+    newItemObjectiveObject.m_state = parseInt(dataList[2]); // 0: idle, 1: moving, 2: dazed
+    newItemObjectiveObject.m_supplyItem = 0; // 0: Nothing
+    newItemObjectiveObject.m_neededItem = new Map(); // Dictionary of 
+
+    let listOfNeededItems = dataList[4].Split('|');
+
+    newItemObjectiveObject.m_changedData = {
         state: "",
-        carriedItem: "",
-        titles: "",
-        points: "",
-        totalPoints: ""
+        supplyItem: ""
     }
 
     //Ensure that the position is within the bounds of the canvas
 
-    newPlayerObject.Update = function (data) {
+    newItemObjectiveObject.Update = function (data) {
 
         //"Action, id, position_X, position_Y, m_playerSprite.localScale_X, state, carriedItem, titles, points";
         //      0,  1,          2,          3,                           4,     5,           6,      7,      8
@@ -62,11 +56,11 @@ function CreatePlayerObject(id, name, color, totalPoints, titles) {
         }
     }
 
-    newPlayerObject.NameChange = function (name) {
-        newPlayerObject.m_name = name;
+    newItemObjectiveObject.NameChange = function (name) {
+        newItemObjectiveObject.m_name = name;
     }
 
-    newPlayerObject.GetChangedData = function () {
+    newItemObjectiveObject.GetChangedData = function () {
 
         //"Action, id, position_X, position_Y, m_playerSprite.localScale_X, state, carriedItem, titles, points";
         //      0,  1,          2,          3,                           4,     5,           6,      7,      8
@@ -80,7 +74,7 @@ function CreatePlayerObject(id, name, color, totalPoints, titles) {
         changedData += `${this.m_changedData.points},`;
 
 
-        newPlayerObject.m_changedData = {
+        newItemObjectiveObject.m_changedData = {
             positionX: "",
             positionY: "",
             localScaleX: "",
@@ -95,7 +89,7 @@ function CreatePlayerObject(id, name, color, totalPoints, titles) {
         return changedData;
     }
 
-    newPlayerObject.GetAllData = function () {
+    newItemObjectiveObject.GetAllData = function () {
 
         //"Action, id, position_X, position_Y, m_playerSprite.localScale_X, state, carriedItem, titles, points, totalPoints, name, color";
         //      0,  1,          2,          3,                           4,     5,           6,      7,      8,           9,   10,    11
@@ -106,7 +100,7 @@ function CreatePlayerObject(id, name, color, totalPoints, titles) {
         allData += `${this.m_position.y},`;
         allData += `${this.m_localScaleX},`;
         allData += `${this.m_state},`;
-        allData += `${this.m_carriedItem},`;
+        allData += `${this.m_supplyItem},`;
         allData += `${this.m_titles},`;
         allData += `${this.m_points},`;
         allData += `${this.m_totalPoints},`;
@@ -116,7 +110,7 @@ function CreatePlayerObject(id, name, color, totalPoints, titles) {
         return allData;
     }
 
-    return newPlayerObject;
+    return newItemObjectiveObject;
 }
 
 module.exports.CreatePlayerObject = CreatePlayerObject;

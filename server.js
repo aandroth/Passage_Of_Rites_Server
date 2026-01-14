@@ -1,6 +1,7 @@
 const Websocket = require('ws');
 const { CreatePlayerObject } = require('./player');
-const { GetPlayerPositionAndFacing } = require('./player_starting_positions');
+const { CreateNpcObject } = require('./npc');
+const { CreateItemObjectiveObject } = require('./itemObjective');
 const m_port = 5000;
 const wss = new Websocket.Server({ port: m_port });
 const args = require('minimist')(process.argv.slice(2));
@@ -8,6 +9,8 @@ const SERVER_NAME = args['serverName'];
 
 var m_playerUnchangingDataDictionary = new Map();
 var m_playerDictionary = new Map();
+var m_npcDictionary = new Map();
+var m_itemObjectiveDictionary = new Map();
 var m_playerReadinessDictionary = new Map();
 var m_changedPlayerArray = [];
 var m_playingGame = false;
@@ -87,8 +90,14 @@ wss.on('connection', ws => {
             if (listedData[0] == "Update" && listedData[7] != "")
                 console.log(`Received Message: ${stringData}`);
 
-            if (listedData.length == 9 && listedData[0] == "Update") {
-                HandleMessage_update(listedData);
+            if (listedData.length == 9 && listedData[0] == "Update_Player") {
+                HandleMessage_updatePlayer(listedData);
+            }
+            if (listedData[0] == "Update_Npc") {
+                HandleMessage_updateNpc(listedData, stringData);
+            }
+            if (listedData[0] == "Update_ItemObjective") {
+                HandleMessage_updateItemObjective(listedData);
             }
             if (listedData.length == 3 && listedData[0] == "Change_Name") {
                 HandleMessage_nameChange(listedData);
@@ -99,8 +108,14 @@ wss.on('connection', ws => {
             if (listedData.length == 2 && listedData[0] == "Load_Level") {
                 HandleMessage_loadLevel(listedData);
             }
-            if (listedData.length == 2 && listedData[0] == "Create_Chars") {
-                HandleMessage_createChars(listedData);
+            //if (listedData.length == 2 && listedData[0] == "Create_Chars") {
+            //    HandleMessage_createChars(listedData);
+            //}
+            if (listedData[0] == "Spawn_Npc") {
+                HandleMessage_spawnNpc(listedData);
+            }
+            if (listedData[0] == "Create_ItemObjective") {
+                HandleMessage_createItemObjective(listedData);
             }
             if (listedData.length == 1 && listedData[0] == "Game_Start") {
                 HandleMessage_gameStart(listedData);
@@ -160,7 +175,7 @@ function SendMessageToAllClients(messageAction = "", messageData = {}) {
         return;
     }
     var messageToClient = JSON.stringify(messageData);
-    console.log(`SendMessageToAllClients: ${messageToClient}`);
+    //console.log(`SendMessageToAllClients: ${messageToClient}`);
     wss.clients.forEach(client => client.send(messageToClient));
 }
 
@@ -174,10 +189,6 @@ const HandleMessage_makePlayerOwner = (ws, id) => {
 
     console.log(`Sending: player_owner,${ id }`);
     SendMessageToClient(ws, "player_owner", `Make_Owner,${id},t`);
-}
-
-const HandleMessage_createPlayer = (ws, id) => {
-    SendMessageToAllClients("world_data", `New_Player,${newPlayer.GetAllData()}`);
 }
 
 
@@ -203,6 +214,35 @@ const CreateAllCharsForAllPlayers = () => {
     });
 }
 
+//const HandleMessage_createChars = (data) => {
+//    console.log(`data: ${data}`);
+
+//    m_serverState = SERVER_STATE.CHAR_CREATION;
+//    for (let i = 0; i < NUMBER_OF_PLAYER_SLOTS; ++i) {
+//        if (m_idInUse[i])
+//            HandleMessage_createPlayer(i);
+//    }
+//}
+
+//const HandleMessage_createPlayer = (ws, id) => {
+//    SendMessageToAllClients("world_data", `New_Player,${newPlayer.GetAllData()}`);
+//}
+
+const HandleMessage_spawnNpc = (dataList) => {
+    console.log(`Spawn_Npc dataList: ${dataList}`);
+    let id = parseInt(dataList[1]);
+    let newNpc = CreateNpcObject(id, dataList);
+    m_npcDictionary.set(id, newNpc);
+    SendMessageToAllClients("world_data", `New_Npc,${newNpc.GetAllData()}`);
+}
+
+const HandleMessage_createItemObjective = (ws, dataList) => {
+    //let id = parseInt(dataList[1]);
+    //let newItemObjective = CreateItemObjectiveObject(dataList);
+    //m_itemObjectiveDictionary.set(id, newItemObjective);
+    //SendMessageToAllClients("world_data", `New_ItemObjective,${newItemObjective.GetAllData()}`);
+}
+
 const GameReadyForAllPlayers = () => {
 
     console.log(`GameReadyForAllPlayers`);
@@ -213,29 +253,27 @@ const GameReadyForAllPlayers = () => {
     });
 }
 
-const StartGameCountdown = () => {
-
-    if (m_gameState == GAME_STATE.RAT_CATCHING_GAME)
-        m_CurrGameTimeCountdown = RAT_CATCHING_GAME_TIME;
-
-    if (m_gameState == GAME_STATE.TRAP_MAKING_GAME)
-        m_CurrGameTimeCountdown = TRAP_MAKING_GAME_TIME;
-
-    if (m_gameState == GAME_STATE.HALLWAY_GAME)
-        m_CurrGameTimeCountdown = HALLWAY_GAME_TIME;
-
-    if (m_gameState == GAME_STATE.GOLEM_GAME)
-        m_CurrGameTimeCountdown = GOLEM_GAME_TIME;
+const HandleMessage_updatePlayer = (data) => {
+    var id = parseInt(data[1]);
+    if (m_playerDictionary.has(id))
+        m_playerDictionary.get(id).Update(data);
 }
 
-const HandleMessage_update = (data) => {
+const HandleMessage_updateNpc = (data, stringData) => {
     //console.log(`UPDATE: data: ${data}`);
-    //console.log(`SIZE: ${m_playerDictionary.size}`);
-    //console.log(`OBJECT: ${m_playerDictionary.get(0)}`);
-    //console.log(`UNSET?: ${m_playerDictionary.get(0).m_status}`);
+    //console.log(`SIZE: ${m_npcDictionary.size}`);
+    //console.log(`UNSET?: ${m_npcDictionary.get(parseInt(data[1])).m_status}`);
     //console.log(`ID: ${data[1]}`);
-    //console.log(`ID as int: ${parseInt(data[1])}`);
-    m_playerDictionary.get(parseInt(data[1])).Update(data);
+    var id = parseInt(data[1]);
+    if (m_npcDictionary.has(id))
+        m_npcDictionary.get(id).Update(data);
+    SendMessageToAllClients("Update_Npc", stringData)
+}
+
+const HandleMessage_updateItemObjective = (data) => {
+    //var id = parseInt(data[1]);
+    //if (m_playerDictionary.has(id))
+    //    m_playerDictionary.get(parseInt(data[1])).Update(data);
 }
 
 const HandleMessage_nameChange = (data) => {
@@ -317,16 +355,6 @@ const HandleMessage_loadLevel = (data) => {
         m_gameState = GAME_STATE. GOLEM_GAME;
 }
 
-const HandleMessage_createChars = (data) => {
-    console.log(`data: ${data}`);
-
-    m_serverState = SERVER_STATE.CHAR_CREATION;
-    for (let i = 0; i < NUMBER_OF_PLAYER_SLOTS; ++i) {
-        if (m_idInUse[i])
-            HandleMessage_createPlayer(i);
-    }
-}
-
 const HandleMessage_gameStart = (data) => {
     // Tell all players to start the game
     SendMessageToAllClients("start_game", `Game_Start,${data}`);
@@ -347,9 +375,10 @@ async function ServerUpdate() {
     let deltaTime = Date.now() - m_CurrGameTime;
     m_CurrGameTime = Date.now();
     if (m_serverState == SERVER_STATE.GAME_PLAYING && m_CurrGameTimeCountdown > 0) {
-        if (m_playerDictionary.size > 0) {
-            if (m_playingGame)
+        if (m_playingGame) {
+            if (m_playerDictionary.size > 0)
                 m_playerArray.forEach(playerInPlayerArray => playerInPlayerArray.Update());
+            //if()
         }
         //console.log("Before: " + m_CurrGameTimeCountdown);
         m_CurrGameTimeCountdown -= (deltaTime);
