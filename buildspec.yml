@@ -9,7 +9,7 @@ phases:
   build:
     commands:
       - echo Build started on 'date'
-      - Building the Docker image...
+      - echo Building the Docker image...
       - docker build -t cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION} .
       - docker tag cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION}:latest ${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com/cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION}:latest
   post_build:
