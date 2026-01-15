@@ -5,7 +5,9 @@ env:
 phases:
   pre_build:
     commands:
-      - aws ecr get-login-password --region ${MY_REGION} | docker login --username AWS --password-stdin ${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com
+      - TOKEN=$(aws ecr get-authorization-token --output text --query 'authorizationData[].authorizationToken')
+      - curl -i -H "Authorization: Basic $TOKEN" https://${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com/v2/amazonlinux/tags/list
+      #- aws ecr get-login-password --region ${MY_REGION} | docker login --username AWS --password-stdin ${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com
   build:
     commands:
       - echo Build started on 'date'
