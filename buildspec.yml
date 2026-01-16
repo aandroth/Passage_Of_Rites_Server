@@ -11,8 +11,10 @@ phases:
     commands:
       - echo Build started on 'date'
       - echo Building the Docker image...
-      - docker build -t cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION} .
-      - docker tag cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION}:latest ${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com/cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION}:latest
+      - curl -i -H "Authorization:Basic $TOKEN" https://${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com/v2/amazonlinux/linux/build
+      - curl -i -H "Authorization:Basic $TOKEN" https://${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com/v2/amazonlinux/linux/push
+      #- docker build -t cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION} .
+      #- docker tag cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION}:latest ${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com/cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION}:latest
   post_build:
     commands:
       - echo "Build has been completed on `date`"
