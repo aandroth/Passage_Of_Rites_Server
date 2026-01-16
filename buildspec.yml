@@ -6,7 +6,6 @@ phases:
   pre_build:
     commands:
       - TOKEN=$(aws ecr get-authorization-token --output text --query 'authorizationData[].authorizationToken')
-      - curl -i -H "Authorization:Basic $TOKEN" https://${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com/v2/amazonlinux/docker/login
       #- aws ecr get-login-password --region ${MY_REGION} | docker login --username AWS --password-stdin ${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com
   build:
     commands:
@@ -18,4 +17,5 @@ phases:
     commands:
       - echo "Build has been completed on `date`"
       - echo "Pushing to Docker image..."
-      - docker push ${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com/cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION}:latest
+      - curl -i -H "Authorization:Basic $TOKEN" https://${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com/v2/amazonlinux/docker/push
+      #- docker push ${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com/cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION}:latest
