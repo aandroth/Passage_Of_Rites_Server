@@ -3,4 +3,4 @@ WORKDIR /
 COPY package*.json server.js player.js npc.js itemObjective.js ./
 RUN npm install
 EXPOSE 5000
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
