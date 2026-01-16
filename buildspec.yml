@@ -11,11 +11,10 @@ phases:
       - aws ecr get-login-password --region ${MY_REGION} | docker login --username AWS --password-stdin ${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com
   build:
     commands:
-      - echo Build started on 'date'
       - echo Building the Docker image...
       #- curl -i -H "Authorization:Basic $TOKEN" https://${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com/v2/amazonlinux/linux/build
       #- curl -i -H "Authorization:Basic $TOKEN" https://${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com/v2/amazonlinux/linux/push
-      - docker build -t cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION} .
+      - docker build --build-arg MY_NODE_REPO=${MY_NODE_REPO} -t cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION} .
       - docker tag cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION}:latest ${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com/cdk-hnb659fds-container-assets-${MY_ID}-${MY_REGION}:latest
   post_build:
     commands:
