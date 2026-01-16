@@ -1,6 +1,6 @@
 FROM node:16.9.0
 WORKDIR /
-COPY package*.json server.js player.js npc.js ./
+COPY package*.json server.js player.js npc.js itemObjective.js ./
 RUN npm install
 EXPOSE 5000
 CMD ["npm", "start"]
