@@ -91,7 +91,7 @@ wss.on('connection', ws => {
                 console.log(`Received Message: ${stringData}`);
 
             if (listedData.length == 9 && listedData[0] == "Update_Player") {
-                HandleMessage_updatePlayer(listedData);
+                HandleMessage_updatePlayer(listedData, stringData);
             }
             if (listedData[0] == "Update_Npc") {
                 HandleMessage_updateNpc(listedData, stringData);
@@ -253,20 +253,22 @@ const GameReadyForAllPlayers = () => {
     });
 }
 
-const HandleMessage_updatePlayer = (data) => {
-    var id = parseInt(data[1]);
-    if (m_playerDictionary.has(id))
-        m_playerDictionary.get(id).Update(data);
+const HandleMessage_updatePlayer = (listedData, stringData) => {
+    var id = parseInt(listedData[1]);
+    if (m_playerDictionary.has(id)) {
+        m_playerDictionary.get(id).Update(listedData);
+        SendMessageToAllClients("Update_Player", stringData)
+    }
 }
 
-const HandleMessage_updateNpc = (data, stringData) => {
+const HandleMessage_updateNpc = (listedData, stringData) => {
     //console.log(`UPDATE: data: ${data}`);
     //console.log(`SIZE: ${m_npcDictionary.size}`);
     //console.log(`UNSET?: ${m_npcDictionary.get(parseInt(data[1])).m_status}`);
     //console.log(`ID: ${data[1]}`);
-    var id = parseInt(data[1]);
+    var id = parseInt(listedData[1]);
     if (m_npcDictionary.has(id))
-        m_npcDictionary.get(id).Update(data);
+        m_npcDictionary.get(id).Update(listedData);
     SendMessageToAllClients("Update_Npc", stringData)
 }
 
