@@ -90,43 +90,46 @@ wss.on('connection', ws => {
             if (listedData[0] == "Update" && listedData[7] != "")
                 console.log(`Received Message: ${stringData}`);
 
-            if (listedData.length == 9 && listedData[0] == "Update_Player") {
+            if (listedData[0] == "Ping") {
+                HandleMessage_ping();
+            }
+            else if (listedData.length == 9 && listedData[0] == "Update_Player") {
                 HandleMessage_updatePlayer(listedData, stringData);
             }
-            if (listedData[0] == "Update_Npc") {
+            else if (listedData[0] == "Update_Npc") {
                 HandleMessage_updateNpc(listedData, stringData);
             }
-            if (listedData[0] == "Update_ItemObjective") {
+            else if (listedData[0] == "Update_ItemObjective") {
                 HandleMessage_updateItemObjective(listedData);
             }
-            if (listedData[0] == "Set_Interval") {
+            else if (listedData[0] == "Set_Interval") {
                 HandleMessage_setInterval(listedData);
             }
-            if (listedData.length == 3 && listedData[0] == "Change_Name") {
+            else if (listedData.length == 3 && listedData[0] == "Change_Name") {
                 HandleMessage_nameChange(listedData);
             }
-            if (listedData.length == 2 && listedData[0] == "Player_Ready") {
+            else if (listedData.length == 2 && listedData[0] == "Player_Ready") {
                 HandleMessage_playerReady(id);
             }
-            if (listedData.length == 2 && listedData[0] == "Load_Level") {
+            else if (listedData.length == 2 && listedData[0] == "Load_Level") {
                 HandleMessage_loadLevel(listedData);
             }
             //if (listedData.length == 2 && listedData[0] == "Create_Chars") {
             //    HandleMessage_createChars(listedData);
             //}
-            if (listedData[0] == "Spawn_Npc") {
+            else if (listedData[0] == "Spawn_Npc") {
                 HandleMessage_spawnNpc(listedData);
             }
-            if (listedData[0] == "Create_ItemObjective") {
+            else if (listedData[0] == "Create_ItemObjective") {
                 HandleMessage_createItemObjective(listedData);
             }
-            if (listedData.length == 1 && listedData[0] == "Game_Start") {
+            else if (listedData.length == 1 && listedData[0] == "Game_Start") {
                 HandleMessage_gameStart(listedData);
             }
-            if (listedData.length == 2 && listedData[0] == "Start_Countdown") {
+            else if (listedData.length == 2 && listedData[0] == "Start_Countdown") {
                 HandleMessage_startCountdown(listedData);
             }
-            if (listedData.length == 2 && listedData[0] == "Kill_Game") {
+            else if (listedData.length == 2 && listedData[0] == "Kill_Game") {
                 HandleMessage_killGame(listedData);
             }
         });
@@ -254,6 +257,10 @@ const GameReadyForAllPlayers = () => {
         if (m_idInUse[id])
             SendMessageToAllClients("Game_Ready", `Game_Ready,${id}`);
     });
+}
+
+const HandleMessage_ping = () => {
+    SendMessageToAllClients("Ping", "Ping")
 }
 
 const HandleMessage_updatePlayer = (listedData, stringData) => {
