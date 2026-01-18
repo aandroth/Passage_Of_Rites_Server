@@ -99,6 +99,9 @@ wss.on('connection', ws => {
             if (listedData[0] == "Update_ItemObjective") {
                 HandleMessage_updateItemObjective(listedData);
             }
+            if (listedData[0] == "Set_Interval") {
+                HandleMessage_setInterval(listedData);
+            }
             if (listedData.length == 3 && listedData[0] == "Change_Name") {
                 HandleMessage_nameChange(listedData);
             }
@@ -285,6 +288,11 @@ const HandleMessage_nameChange = (data) => {
     console.log("NAME: " + m_playerUnchangingDataDictionary.get(parseInt(data[1])).name);
 }
 
+const HandleMessage_setInterval = (data) => {;
+    var newInterval = parseFloat(data[2]);
+    SendMessageToAllClients("Set_Interval", `${data}`);
+}
+
 const HandleMessage_playerReady = (id) => {
     console.log(`Player ${id} is ready.`);
     if (m_serverState == SERVER_STATE.LEVEL_LOADING) console.log(`Player is ready while m_serverState is LEVEL_LOADING`);
@@ -314,14 +322,9 @@ const HandleMessage_playerReady = (id) => {
             m_serverState = SERVER_STATE.LEVEL_LOADING;
             m_playerUnchangingDataDictionary.get(id).totalPoints += m_playerDictionary.get(id).m_points;
             m_playerUnchangingDataDictionary.get(id).titles = m_playerDictionary.get(id).m_titles;
-            console.log(`titles: ${m_playerUnchangingDataDictionary.get(0).titles}`);
-            console.log(`m_titles: ${m_playerDictionary.get(0).m_titles}`);
-            //console.log(`size: ${m_playerDictionary.size}`);
+            //console.log(`titles: ${m_playerUnchangingDataDictionary.get(0).titles}`);
+            //console.log(`m_titles: ${m_playerDictionary.get(0).m_titles}`);
             SendMessageToAllClients("Ready_For_Next_Level", `Ready_For_Next_Level,`);
-            //console.log(`size: ${m_playerDictionary.size}`);
-            //for (let i = 0; i < m_playerUnchangingDataDictionary.size; ++i) {
-            //    m_playerUnchangingDataDictionary.get(i).totalPoints += m_playerDictionary.get(i).m_points;
-            //}
         }
     }
 }
