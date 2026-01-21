@@ -40,6 +40,7 @@ function CreateNpcObject(id, dataList) {
         if (data[7] != "") {
             this.m_state = parseInt(data[7]);
             this.m_changedData.state = data[7];
+            console.log(`State is now: ${data[7]}`);
         }
     }
 

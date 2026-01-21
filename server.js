@@ -67,6 +67,7 @@ console.log("Server " + SERVER_NAME + " has started on port " + m_port);
 wss.on('connection', ws => {
     console.log(`Client connected!`);
     var id = GetNextId();
+    ws.id = id;
 
     HandleMessage_initial(ws, id);
     if (id != -1) {
@@ -97,13 +98,13 @@ wss.on('connection', ws => {
                 HandleMessage_updatePlayer(listedData, stringData);
             }
             else if (listedData[0] == "Update_Npc") {
-                HandleMessage_updateNpc(listedData, stringData);
+                HandleMessage_updateNpc(listedData, stringData, id);
             }
             else if (listedData[0] == "Update_ItemObjective") {
-                HandleMessage_updateItemObjective(listedData);
+                HandleMessage_updateItemObjective(listedData, id);
             }
             else if (listedData[0] == "Set_Interval") {
-                HandleMessage_setInterval(listedData);
+                HandleMessage_setInterval(listedData, id);
             }
             else if (listedData.length == 3 && listedData[0] == "Change_Name") {
                 HandleMessage_nameChange(listedData);
@@ -118,10 +119,10 @@ wss.on('connection', ws => {
             //    HandleMessage_createChars(listedData);
             //}
             else if (listedData[0] == "Spawn_Npc") {
-                HandleMessage_spawnNpc(listedData);
+                HandleMessage_spawnNpc(listedData, id);
             }
             else if (listedData[0] == "Create_ItemObjective") {
-                HandleMessage_createItemObjective(listedData);
+                HandleMessage_createItemObjective(listedData, id);
             }
             else if (listedData.length == 1 && listedData[0] == "Game_Start") {
                 HandleMessage_gameStart(listedData);
@@ -169,20 +170,18 @@ function SendMessageToClient(ws, messageAction = "", messageData = {}) {
         console.log(`Message to Client must have a type!`);
         return;
     }
-    //console.log(`Sending action ${messageAction} with data ${JSON.stringify(messageData)}`);
     messageData.action = messageAction;
     var messageToClient = JSON.stringify(messageData);
-    console.log(`SendMessageToClient: ${messageToClient}`);
     ws.send(messageToClient);
 }
-function SendMessageToAllClients(messageAction = "", messageData = {}) {
+function SendMessageToAllClients(messageAction = "", messageData = {}, idOfSendingPlayer = -1) { // -1 means send to all
     if (messageAction == "") {
         console.log(`Message to Client must have a type!`);
         return;
     }
     var messageToClient = JSON.stringify(messageData);
     //console.log(`SendMessageToAllClients: ${messageToClient}`);
-    wss.clients.forEach(client => client.send(messageToClient));
+    wss.clients.forEach(client => { if (client.id != idOfSendingPlayer) client.send(messageToClient); });
 }
 
 const HandleMessage_initial = (ws, id) => {
@@ -220,69 +219,53 @@ const CreateAllCharsForAllPlayers = () => {
     });
 }
 
-//const HandleMessage_createChars = (data) => {
-//    console.log(`data: ${data}`);
-
-//    m_serverState = SERVER_STATE.CHAR_CREATION;
-//    for (let i = 0; i < NUMBER_OF_PLAYER_SLOTS; ++i) {
-//        if (m_idInUse[i])
-//            HandleMessage_createPlayer(i);
-//    }
-//}
-
-//const HandleMessage_createPlayer = (ws, id) => {
-//    SendMessageToAllClients("world_data", `New_Player,${newPlayer.GetAllData()}`);
-//}
-
-const HandleMessage_spawnNpc = (dataList) => {
+const HandleMessage_spawnNpc = (dataList, sendingPlayerId) => {
     console.log(`Spawn_Npc dataList: ${dataList}`);
     let id = parseInt(dataList[1]);
     let newNpc = CreateNpcObject(id, dataList);
     m_npcDictionary.set(id, newNpc);
-    SendMessageToAllClients("world_data", `New_Npc,${newNpc.GetAllData()}`);
+    SendMessageToAllClients("world_data", `New_Npc,${newNpc.GetAllData()}`, sendingPlayerId);
 }
 
-const HandleMessage_createItemObjective = (ws, dataList) => {
+const HandleMessage_createItemObjective = (ws, dataList, sendingPlayerId) => {
     //let id = parseInt(dataList[1]);
     //let newItemObjective = CreateItemObjectiveObject(dataList);
     //m_itemObjectiveDictionary.set(id, newItemObjective);
-    //SendMessageToAllClients("world_data", `New_ItemObjective,${newItemObjective.GetAllData()}`);
-}
-
-const GameReadyForAllPlayers = () => {
-
-    console.log(`GameReadyForAllPlayers`);
-    Object.keys(m_idInUse).forEach((id) => {
-        console.log(`Checking if ${id} is in use`);
-        if (m_idInUse[id])
-            SendMessageToAllClients("Game_Ready", `Game_Ready,${id}`);
-    });
+    //SendMessageToAllClients("world_data", `New_ItemObjective,${newItemObjective.GetAllData()}`, sendingPlayerId);
 }
 
 const HandleMessage_ping = () => {
-    SendMessageToAllClients("Ping", "Ping")
+    SendMessageToClient("Ping", "Ping");
 }
 
 const HandleMessage_updatePlayer = (listedData, stringData) => {
     var id = parseInt(listedData[1]);
     if (m_playerDictionary.has(id)) {
         m_playerDictionary.get(id).Update(listedData);
-        SendMessageToAllClients("Update_Player", stringData)
+        SendMessageToAllClients("Update_Player", stringData, id)
     }
 }
 
-const HandleMessage_updateNpc = (listedData, stringData) => {
+const HandleMessage_updateNpc = (listedData, stringData, sendingPlayerId) => {
     //console.log(`UPDATE: data: ${data}`);
     //console.log(`SIZE: ${m_npcDictionary.size}`);
     //console.log(`UNSET?: ${m_npcDictionary.get(parseInt(data[1])).m_status}`);
     //console.log(`ID: ${data[1]}`);
     var id = parseInt(listedData[1]);
     if (m_npcDictionary.has(id))
+    {
         m_npcDictionary.get(id).Update(listedData);
-    SendMessageToAllClients("Update_Npc", stringData)
+        SendMessageToAllClients("Update_Npc", stringData, sendingPlayerId)
+
+        var destroyedState = 2;
+        if (listedData[7] == destroyedState) {
+            console.log(`DESTROY called on data: ${listedData}`);
+            m_npcDictionary.delete(id);
+        }
+    }
 }
 
-const HandleMessage_updateItemObjective = (data) => {
+const HandleMessage_updateItemObjective = (data, sendingPlayerId) => {
     //var id = parseInt(data[1]);
     //if (m_playerDictionary.has(id))
     //    m_playerDictionary.get(parseInt(data[1])).Update(data);
@@ -295,9 +278,9 @@ const HandleMessage_nameChange = (data) => {
     console.log("NAME: " + m_playerUnchangingDataDictionary.get(parseInt(data[1])).name);
 }
 
-const HandleMessage_setInterval = (data) => {;
+const HandleMessage_setInterval = (data, sendingPlayerId) => {;
     var newInterval = parseFloat(data[2]);
-    SendMessageToAllClients("Set_Interval", `${data}`);
+    SendMessageToAllClients("Set_Interval", `${data}`, sendingPlayerId);
 }
 
 const HandleMessage_playerReady = (id) => {
