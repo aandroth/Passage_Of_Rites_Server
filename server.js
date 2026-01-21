@@ -92,7 +92,7 @@ wss.on('connection', ws => {
                 console.log(`Received Message: ${stringData}`);
 
             if (listedData[0] == "Ping") {
-                HandleMessage_ping();
+                HandleMessage_ping(ws);
             }
             else if (listedData.length == 9 && listedData[0] == "Update_Player") {
                 HandleMessage_updatePlayer(listedData, stringData);
@@ -148,22 +148,22 @@ wss.on('connection', ws => {
             //console.log("Player count: " + m_playerDictionary.size);
         });
 
-        let interval = setInterval(() => SendChangedDataToClient(ws), UPDATE_INTERVAL_TIME);
-        SendChangedDataToClient(ws);
+        //let interval = setInterval(() => SendChangedDataToClient(ws), UPDATE_INTERVAL_TIME);
+        //SendChangedDataToClient(ws);
     }
 });
 
-const SendChangedDataToClient = async (ws) => {
-    if (m_playingGame) {
-        m_playerDictionary.forEach(playerInPlayerMap => {
-            var changedData = playerInPlayerMap.GetChangedData();
-            if (changedData != "Unchanged") {
-                console.log(`changedData: ${changedData}`);
-                SendMessageToClient(ws, "update", `Update,${changedData}`);
-            }
-        });
-    }
-}
+//const SendChangedDataToClient = async (ws) => {
+//    if (m_playingGame) {
+//        m_playerDictionary.forEach(playerInPlayerMap => {
+//            var changedData = playerInPlayerMap.GetChangedData();
+//            if (changedData != "Unchanged") {
+//                console.log(`changedData: ${changedData}`);
+//                SendMessageToClient(ws, "update", `Update,${changedData}`);
+//            }
+//        });
+//    }
+//}
 
 function SendMessageToClient(ws, messageAction = "", messageData = {}) {
     if (messageAction == "") {
@@ -234,8 +234,8 @@ const HandleMessage_createItemObjective = (ws, dataList, sendingPlayerId) => {
     //SendMessageToAllClients("world_data", `New_ItemObjective,${newItemObjective.GetAllData()}`, sendingPlayerId);
 }
 
-const HandleMessage_ping = () => {
-    SendMessageToClient("Ping", "Ping");
+const HandleMessage_ping = (ws) => {
+    SendMessageToClient(ws, "Ping", "Ping");
 }
 
 const HandleMessage_updatePlayer = (listedData, stringData) => {
