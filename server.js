@@ -115,9 +115,6 @@ wss.on('connection', ws => {
             else if (listedData.length == 2 && listedData[0] == "Load_Level") {
                 HandleMessage_loadLevel(listedData);
             }
-            //if (listedData.length == 2 && listedData[0] == "Create_Chars") {
-            //    HandleMessage_createChars(listedData);
-            //}
             else if (listedData[0] == "Spawn_Npc") {
                 HandleMessage_spawnNpc(listedData, id);
             }
@@ -145,25 +142,9 @@ wss.on('connection', ws => {
                     if (m_idInUse[i]) m_serverOwnerId = i;
                 }
             }
-            //console.log("Player count: " + m_playerDictionary.size);
         });
-
-        //let interval = setInterval(() => SendChangedDataToClient(ws), UPDATE_INTERVAL_TIME);
-        //SendChangedDataToClient(ws);
     }
 });
-
-//const SendChangedDataToClient = async (ws) => {
-//    if (m_playingGame) {
-//        m_playerDictionary.forEach(playerInPlayerMap => {
-//            var changedData = playerInPlayerMap.GetChangedData();
-//            if (changedData != "Unchanged") {
-//                console.log(`changedData: ${changedData}`);
-//                SendMessageToClient(ws, "update", `Update,${changedData}`);
-//            }
-//        });
-//    }
-//}
 
 function SendMessageToClient(ws, messageAction = "", messageData = {}) {
     if (messageAction == "") {
@@ -244,6 +225,7 @@ const HandleMessage_updatePlayer = (listedData, stringData) => {
         m_playerDictionary.get(id).Update(listedData);
         SendMessageToAllClients("Update_Player", stringData, id)
     }
+    if (listedData.length > 8 && listedData[8].length > 0) console.log(`UPDATE PLAYER POINTS: ${listedData[8]}`);
 }
 
 const HandleMessage_updateNpc = (listedData, stringData, sendingPlayerId) => {
