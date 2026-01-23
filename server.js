@@ -88,7 +88,7 @@ wss.on('connection', ws => {
             //console.log(`Client sent ${data}`);
             var stringData = `${data}`;
             var listedData = stringData.split(',');
-            if (listedData[0] == "Update" && listedData[7] != "")
+            if (listedData[0] != "Ping")
                 console.log(`Received Message: ${stringData}`);
 
             if (listedData[0] == "Ping") {
@@ -229,10 +229,11 @@ const HandleMessage_updatePlayer = (listedData, stringData) => {
 }
 
 const HandleMessage_updateNpc = (listedData, stringData, sendingPlayerId) => {
-    //console.log(`UPDATE: data: ${data}`);
-    //console.log(`SIZE: ${m_npcDictionary.size}`);
+    console.log(`UPDATE: data: ${stringData}`);
+    console.log(`SIZE: ${m_npcDictionary.size}`);
     //console.log(`UNSET?: ${m_npcDictionary.get(parseInt(data[1])).m_status}`);
     //console.log(`ID: ${data[1]}`);
+    console.log(`Sending Player: ${sendingPlayerId}`);
     var id = parseInt(listedData[1]);
     if (m_npcDictionary.has(id))
     {
