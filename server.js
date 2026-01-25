@@ -1,7 +1,7 @@
 const Websocket = require('ws');
 const { CreatePlayerObject } = require('./player');
 const { CreateNpcObject } = require('./npc');
-const { CreateItemObjectiveObject } = require('./itemObjective');
+const { CreateItemObjective } = require('./itemObjective');
 const m_port = 5000;
 const wss = new Websocket.Server({ port: m_port });
 const args = require('minimist')(process.argv.slice(2));
@@ -88,7 +88,7 @@ wss.on('connection', ws => {
             //console.log(`Client sent ${data}`);
             var stringData = `${data}`;
             var listedData = stringData.split(',');
-            if (listedData[0] != "Ping")
+            if (listedData[0] != "Ping" && listedData[0] != "Update_Npc")
                 console.log(`Received Message: ${stringData}`);
 
             if (listedData[0] == "Ping") {
@@ -118,8 +118,8 @@ wss.on('connection', ws => {
             else if (listedData[0] == "Spawn_Npc") {
                 HandleMessage_spawnNpc(listedData, id);
             }
-            else if (listedData[0] == "Create_ItemObjective") {
-                HandleMessage_createItemObjective(listedData, id);
+            else if (listedData[0] == "Register_Item") {
+                HandleMessage_registerItemObjective(listedData, id);
             }
             else if (listedData.length == 1 && listedData[0] == "Game_Start") {
                 HandleMessage_gameStart(listedData);
@@ -208,11 +208,21 @@ const HandleMessage_spawnNpc = (dataList, sendingPlayerId) => {
     SendMessageToAllClients("world_data", `New_Npc,${newNpc.GetAllData()}`, sendingPlayerId);
 }
 
-const HandleMessage_createItemObjective = (ws, dataList, sendingPlayerId) => {
-    //let id = parseInt(dataList[1]);
-    //let newItemObjective = CreateItemObjectiveObject(dataList);
-    //m_itemObjectiveDictionary.set(id, newItemObjective);
-    //SendMessageToAllClients("world_data", `New_ItemObjective,${newItemObjective.GetAllData()}`, sendingPlayerId);
+const HandleMessage_registerItemObjective = (dataList, sendingPlayerId) => {
+    let id = parseInt(dataList[1]);
+    let newItemObjective = CreateItemObjective(id, dataList);
+    m_itemObjectiveDictionary.set(id, newItemObjective);
+    SendMessageToAllClients("world_data", `New_ItemObjective,${newItemObjective.GetAllData()}`, sendingPlayerId);
+
+    //console.log(`Register ItemObjective`);
+    //console.log(`SIZE: ${m_itemObjectiveDictionary.size}`);
+    //console.log(`ID: ${newItemObjective.m_id}`);
+    //console.log(`itemType: ${newItemObjective.m_itemType}`);
+    //console.log(`ownerType: ${newItemObjective.m_ownerType}`);
+    //console.log(`posX: ${newItemObjective.m_position.x}`);
+    //console.log(`posY: ${newItemObjective.m_position.y}`);
+    //console.log(`scaleX: ${newItemObjective.m_localScaleX}`);
+    //console.log(`state: ${newItemObjective.m_state}`);
 }
 
 const HandleMessage_ping = (ws) => {
@@ -229,8 +239,8 @@ const HandleMessage_updatePlayer = (listedData, stringData) => {
 }
 
 const HandleMessage_updateNpc = (listedData, stringData, sendingPlayerId) => {
-    console.log(`UPDATE: data: ${stringData}`);
-    console.log(`SIZE: ${m_npcDictionary.size}`);
+    //console.log(`UPDATE: data: ${stringData}`);
+    //console.log(`SIZE: ${m_npcDictionary.size}`);
     //console.log(`UNSET?: ${m_npcDictionary.get(parseInt(data[1])).m_status}`);
     //console.log(`ID: ${data[1]}`);
     console.log(`Sending Player: ${sendingPlayerId}`);
