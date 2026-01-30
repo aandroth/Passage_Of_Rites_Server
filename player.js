@@ -3,6 +3,7 @@
 function CreatePlayerObject(id, name, color, totalPoints, titles) {
     var newPlayerObject = {};
     newPlayerObject.m_status = "set";
+    newPlayerObject.m_dataIsNotLocked = true;
     newPlayerObject.m_id = id;
     newPlayerObject.m_position = { x: 0, y: 0 };
     newPlayerObject.m_localScaleX = 1;

@@ -5,6 +5,7 @@ function CreateNpcObject(id, dataList) {
     //      0,  1,         2,       3,          4,          5,                      6,     7
     var newNpcObject = {};
     newNpcObject.m_status = "set";
+    newNpcObject.m_dataIsNotLocked = true;
     newNpcObject.m_id = id;
     newNpcObject.m_spawnerId = parseInt(dataList[2]);
     newNpcObject.m_npcType = parseInt(dataList[3]);

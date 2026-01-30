@@ -7,6 +7,7 @@ function CreateItemObjective(id, dataList) {
 
     var newItemObjectiveObject = {};
     newItemObjectiveObject.m_status = "set";
+    newItemObjectiveObject.m_dataIsNotLocked = true;
     newItemObjectiveObject.m_id = id;
     newItemObjectiveObject.m_ownerId = parseInt(dataList[2]); // 0: Nothing
     newItemObjectiveObject.m_itemType = parseInt(dataList[3]); // 0: PICKUP, 1: OWNED
@@ -84,6 +85,14 @@ function CreateItemObjective(id, dataList) {
         allData += `${this.m_state}`;
 
         return allData;
+    }
+
+    newItemObjectiveObject.InteractSuccess = function () {
+
+        // ITEM_STATE { NONE, INACTIVE, COMPLETED, INTERACT, DESTROYED }
+        //                 0,        1,         2,        3,         4
+
+        return this.m_state == 0;
     }
 
     return newItemObjectiveObject;

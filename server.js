@@ -101,7 +101,7 @@ wss.on('connection', ws => {
                 HandleMessage_updateNpc(listedData, stringData, id);
             }
             else if (listedData[0] == "Update_ItemObjective") {
-                HandleMessage_updateItemObjective(listedData, id);
+                HandleMessage_updateItemObjective(listedData, stringData, id);
             }
             else if (listedData[0] == "Set_Interval") {
                 HandleMessage_setInterval(listedData, id);
@@ -124,11 +124,17 @@ wss.on('connection', ws => {
             else if (listedData.length == 1 && listedData[0] == "Game_Start") {
                 HandleMessage_gameStart(listedData);
             }
+            else if (listedData[0] == "Attempt_Interact") {
+                HandleMessage_attemptItemInteraction(listedData);
+            }
             else if (listedData.length == 2 && listedData[0] == "Start_Countdown") {
                 HandleMessage_startCountdown(listedData);
             }
             else if (listedData.length == 2 && listedData[0] == "Kill_Game") {
                 HandleMessage_killGame(listedData);
+            }
+            else {
+                console.WriteLine(`Unhandled message type: ${listedData[0]}`);
             }
         });
 
@@ -141,10 +147,17 @@ wss.on('connection', ws => {
                 for (let i = 0; i < NUMBER_OF_PLAYER_SLOTS; i++){
                     if (m_idInUse[i]) m_serverOwnerId = i;
                 }
+                if (m_playerDictionary.size == 0) {
+                    process.exit();
+                }
             }
         });
     }
 });
+
+function ResetAllData() {
+
+}
 
 function SendMessageToClient(ws, messageAction = "", messageData = {}) {
     if (messageAction == "") {
@@ -231,7 +244,7 @@ const HandleMessage_ping = (ws) => {
 
 const HandleMessage_updatePlayer = (listedData, stringData) => {
     var id = parseInt(listedData[1]);
-    if (m_playerDictionary.has(id)) {
+    if (m_playerDictionary.has(id) && m_playerDictionary.get(id).m_dataIsNotLocked) {
         m_playerDictionary.get(id).Update(listedData);
         SendMessageToAllClients("Update_Player", stringData, id)
     }
@@ -243,9 +256,8 @@ const HandleMessage_updateNpc = (listedData, stringData, sendingPlayerId) => {
     //console.log(`SIZE: ${m_npcDictionary.size}`);
     //console.log(`UNSET?: ${m_npcDictionary.get(parseInt(data[1])).m_status}`);
     //console.log(`ID: ${data[1]}`);
-    console.log(`Sending Player: ${sendingPlayerId}`);
     var id = parseInt(listedData[1]);
-    if (m_npcDictionary.has(id))
+    if (m_npcDictionary.has(id) && m_npcDictionary.get(id).m_dataIsNotLocked)
     {
         m_npcDictionary.get(id).Update(listedData);
         SendMessageToAllClients("Update_Npc", stringData, sendingPlayerId)
@@ -258,10 +270,20 @@ const HandleMessage_updateNpc = (listedData, stringData, sendingPlayerId) => {
     }
 }
 
-const HandleMessage_updateItemObjective = (data, sendingPlayerId) => {
-    //var id = parseInt(data[1]);
-    //if (m_playerDictionary.has(id))
-    //    m_playerDictionary.get(parseInt(data[1])).Update(data);
+const HandleMessage_updateItemObjective = (listedData, stringData, sendingPlayerId) => {
+    console.log(`Sending Player: ${sendingPlayerId}`);
+    var id = parseInt(listedData[1]);
+    if (m_itemObjectiveDictionary.has(id) && m_itemObjectiveDictionary.get(id).m_dataIsNotLocked) {
+        m_itemObjectiveDictionary.get(id).Update(listedData);
+        SendMessageToAllClients("Update_Item", stringData, sendingPlayerId)
+
+        var destroyedState = 4;
+        var stateIndex = 8;
+        if (listedData[stateIndex] == destroyedState) {
+            console.log(`DESTROY called on data: ${listedData}`);
+            m_itemObjectiveDictionary.delete(id);
+        }
+    }
 }
 
 const HandleMessage_nameChange = (data) => {
@@ -309,6 +331,28 @@ const HandleMessage_playerReady = (id) => {
             //console.log(`m_titles: ${m_playerDictionary.get(0).m_titles}`);
             SendMessageToAllClients("Ready_For_Next_Level", `Ready_For_Next_Level,`);
         }
+    }
+}
+
+const HandleMessage_attemptItemInteraction = (data) => {
+    // Action, itemId_0, itemId_1
+    //      0,        1,        2
+    console.log(`data: ${data}`);
+    var itemId_0 = parseInt(data[1]);
+    var itemId_1 = parseInt(data[2]);
+    if (m_itemObjectiveDictionary.has(itemId_0) && m_itemObjectiveDictionary.get(itemId_0).m_dataIsNotLocked &&
+        m_itemObjectiveDictionary.has(itemId_1) && m_itemObjectiveDictionary.get(itemId_1).m_dataIsNotLocked) {
+
+        m_itemObjectiveDictionary.get(itemId_0).m_dataIsNotLocked = false;
+        m_itemObjectiveDictionary.get(itemId_1).m_dataIsNotLocked = false;
+
+        if (m_itemObjectiveDictionary.get(itemId_1).InteractSuccess()) {
+            m_itemObjectiveDictionary.get(itemId_1).m_state = 3; // 3: INTERACT
+            SendMessageToAllClients("Execute_Interact", `Execute_Interact,${itemId_0},${itemId_1}`);
+        }
+
+        m_itemObjectiveDictionary.get(itemId_0).m_dataIsNotLocked = true;
+        m_itemObjectiveDictionary.get(itemId_1).m_dataIsNotLocked = true;
     }
 }
 
