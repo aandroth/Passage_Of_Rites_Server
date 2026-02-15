@@ -7,7 +7,6 @@ phases:
     commands:
       - echo ${MY_ID}
       - echo ${MY_REGION}
-      - echo Make It Better
       - aws ecr get-login-password --region ${MY_REGION} | docker login --username AWS --password-stdin ${MY_ID}.dkr.ecr.${MY_REGION}.amazonaws.com
   build:
     commands:
