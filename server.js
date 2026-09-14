@@ -225,6 +225,7 @@ const HandleMessage_registerItemObjective = (dataList, sendingPlayerId) => {
     let id = parseInt(dataList[1]);
     let newItemObjective = CreateItemObjective(id, dataList);
     m_itemObjectiveDictionary.set(id, newItemObjective);
+    console.log(`Sending out: New_ItemObjective,${newItemObjective.GetAllData()}`);
     SendMessageToAllClients("world_data", `New_ItemObjective,${newItemObjective.GetAllData()}`, sendingPlayerId);
 
     //console.log(`Register ItemObjective`);
